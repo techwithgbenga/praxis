@@ -52,3 +52,25 @@ pub enum IdentityError {
     #[error("object ts {0:?} precedes this log's last-applied event at {1:?}")]
     TsNotMonotonic(Ts, Ts),
 }
+
+impl IdentityError {
+    /// The stable `E_*` code for this error (`AGENTS.md` §3 `DoD`), independent
+    /// of the `Display` message's exact wording.
+    #[must_use]
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::UnexpectedGenesis => "E_UNEXPECTED_GENESIS",
+            Self::GenesisHasNoKeys => "E_GENESIS_HAS_NO_KEYS",
+            Self::InvalidGenesisAuthor => "E_INVALID_GENESIS_AUTHOR",
+            Self::InvalidPayload(_) => "E_INVALID_PAYLOAD",
+            Self::KindOpMismatch => "E_KIND_OP_MISMATCH",
+            Self::UnknownSigner(_) => "E_UNKNOWN_SIGNER",
+            Self::UnauthorizedSigner(_, _) => "E_UNAUTHORIZED_SIGNER",
+            Self::InvalidSignature(_) => "E_INVALID_SIGNATURE",
+            Self::Codec(_) => "E_CODEC",
+            Self::DuplicateKid(_) => "E_DUPLICATE_KID",
+            Self::UnknownRevokeTarget(_) => "E_UNKNOWN_REVOKE_TARGET",
+            Self::TsNotMonotonic(_, _) => "E_TS_NOT_MONOTONIC",
+        }
+    }
+}

@@ -62,6 +62,26 @@ pub enum CodecError {
     ReservedFieldName(String),
 }
 
+impl CodecError {
+    /// The stable `E_*` code for this error (`AGENTS.md` §3 `DoD`), independent
+    /// of the `Display` message's exact wording — e.g. [`Self::Decode`] wraps
+    /// an opaque, library-specific message that varies across dag-cbor
+    /// implementations and is not itself a stable identifier.
+    #[must_use]
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::TooLarge(_) => "E_TOO_LARGE",
+            Self::Decode(_) => "E_DECODE",
+            Self::Encode(_) => "E_ENCODE",
+            Self::NonCanonical => "E_NONCANONICAL",
+            Self::FloatNotAllowed => "E_FLOAT_NOT_ALLOWED",
+            Self::TooDeep(_) => "E_TOO_DEEP",
+            Self::ArrayTooLong(_) => "E_ARRAY_TOO_LONG",
+            Self::ReservedFieldName(_) => "E_RESERVED_FIELD_NAME",
+        }
+    }
+}
+
 /// The envelope's own field names (`spec/praxis-v0.1.cddl` `object`).
 /// `Object.unknown` MUST NOT contain any of these: a decoded object never can
 /// (serde's `flatten` routes a given key to either a named field or the

@@ -48,6 +48,21 @@ pub enum SealError {
     PaddingDidNotConverge,
 }
 
+impl SealError {
+    /// The stable `E_*` code for this error (`AGENTS.md` §3 `DoD`), independent
+    /// of the `Display` message's exact wording.
+    #[must_use]
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::TooLargeToPad(_) => "E_TOO_LARGE_TO_PAD",
+            Self::Codec(_) => "E_CODEC",
+            Self::Aead(_) => "E_AEAD",
+            Self::CommitMismatch => "E_COMMIT_MISMATCH",
+            Self::PaddingDidNotConverge => "E_PADDING_DID_NOT_CONVERGE",
+        }
+    }
+}
+
 /// Picks the smallest bucket the unpadded plaintext can be padded into
 /// exactly: either no padding is needed (`bucket == unpadded_len`), or there
 /// must be room for at least [`MIN_PAD_FIELD_OVERHEAD`] bytes once the `pad`
