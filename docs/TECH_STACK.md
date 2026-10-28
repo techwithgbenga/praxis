@@ -24,6 +24,7 @@ Selection criteria: **(1)** memory safety for parsers of hostile data, **(2)** r
 | Apprentice runtime | **Python 3.12+** (`uv`, `ruff`, `mypy --strict`), models via `llama.cpp`/Ollama/vLLM adapters; embeddings via ONNX Runtime | ML ecosystem lives here; isolated process |
 | Desktop app | **Tauri 2** + **TypeScript** + **React** (or SolidJS) + Tailwind | Small footprint, Rust backend shares core, security model |
 | TS SDK | wasm-bindgen build of core + typed wrappers; **independent pure-TS verifier** for cross-checking | Second implementation guards against spec drift |
+| TS verifier crypto | `@noble/hashes` (BLAKE3), `@noble/curves` (Ed25519), `@noble/ciphers` (XChaCha20-Poly1305) | Pure TS/JS, no WASM (the verifier's whole point is to be a *second*, independently-built implementation — see row above); zero runtime dependencies; audited, widely deployed (MetaMask and other major wallets); maintained by the same author across all three, keeping the API style consistent. `@noble/hashes` also supplies HKDF-SHA256 directly (no separate package needed). |
 | Python SDK | PyO3 (`maturin`) | ML community |
 | Mobile (later) | UniFFI (Swift/Kotlin) | Reuse core |
 | Docs | **mdBook**; CDDL lint (`cddl` crate); spec rendered to site | |
