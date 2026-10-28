@@ -146,6 +146,20 @@ pub fn encode_object(object: &Object) -> Result<Vec<u8>, CodecError> {
     serde_ipld_dagcbor::to_vec(object).map_err(|e| CodecError::Encode(e.to_string()))
 }
 
+/// Computes an object's own ID: the `Cid` of its entire canonical encoding,
+/// *including* `sig` (`spec/PROTOCOL.md` §5.1). Ed25519 is deterministic, so
+/// this is stable for a given signed object.
+///
+/// # Errors
+/// See [`encode_object`].
+pub fn object_id(object: &Object) -> Result<crate::envelope::Cid, CodecError> {
+    let bytes = encode_object(object)?;
+    Ok(crate::envelope::Cid::from_canonical_bytes(
+        crate::envelope::CidCodec::DagCbor,
+        &bytes,
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
@@ -190,6 +204,14 @@ mod tests {
     fn encoding_is_deterministic() {
         let obj = sample_object(BTreeMap::new());
         assert_eq!(encode_object(&obj).unwrap(), encode_object(&obj).unwrap());
+    }
+
+    #[test]
+    fn object_id_is_the_cid_of_its_own_canonical_bytes() {
+        let obj = sample_object(BTreeMap::new());
+        let bytes = encode_object(&obj).unwrap();
+        let expected = Cid::from_canonical_bytes(CidCodec::DagCbor, &bytes);
+        assert_eq!(object_id(&obj).unwrap(), expected);
     }
 
     #[test]

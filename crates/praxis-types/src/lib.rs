@@ -22,7 +22,8 @@ mod scalar;
 mod value;
 
 pub use codec::{
-    decode_object, encode_object, CodecError, MAX_ARRAY_ITEMS, MAX_NESTING_DEPTH, MAX_OBJECT_BYTES,
+    decode_object, encode_object, object_id, CodecError, MAX_ARRAY_ITEMS, MAX_NESTING_DEPTH,
+    MAX_OBJECT_BYTES,
 };
 
 pub use content::{

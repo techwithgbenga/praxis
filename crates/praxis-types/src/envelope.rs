@@ -98,6 +98,17 @@ impl Cid {
         Self(RawCid::new_v1(codec.to_multicodec(), mh))
     }
 
+    /// Computes the `Cid` of some already-canonically-encoded bytes
+    /// (`spec/PROTOCOL.md` §5.1: "Object ID = CID of the entire canonical
+    /// encoding"; §8.6 for blobs, which use `CidCodec::Raw`). `bytes` is
+    /// *not* re-canonicalized here — pass it through [`crate::encode_object`]
+    /// (or an equivalent canonical encoding) first.
+    #[must_use]
+    pub fn from_canonical_bytes(codec: CidCodec, bytes: &[u8]) -> Self {
+        let digest: [u8; 32] = *blake3::hash(bytes).as_bytes();
+        Self::new(codec, Hash32::new(digest))
+    }
+
     /// This CID's multicodec.
     ///
     /// # Panics
@@ -351,6 +362,75 @@ mod tests {
 
     fn test_did() -> Did {
         Did::new("did:praxis:".to_string() + &"a".repeat(20)).unwrap()
+    }
+
+    /// Official BLAKE3 test vectors (`BLAKE3-team/BLAKE3`,
+    /// `test_vectors/test_vectors.json`, `hash` mode, first 32 bytes of the
+    /// extended output — downloaded and parsed with a script, not retyped by
+    /// hand, to avoid a transcription error in the hex). Per that file's
+    /// `_comment`: the input of length `n` is the 251-byte sequence
+    /// `0, 1, 2, ..., 250, 0, 1, ...` truncated to `n` bytes.
+    #[test]
+    fn cid_from_canonical_bytes_matches_official_blake3_vectors() {
+        fn input_of_len(n: usize) -> Vec<u8> {
+            (0..n).map(|i| u8::try_from(i % 251).unwrap()).collect()
+        }
+
+        let cases: &[(usize, &str)] = &[
+            (
+                0,
+                "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+            ),
+            (
+                1,
+                "2d3adedff11b61f14c886e35afa036736dcd87a74d27b5c1510225d0f592e213",
+            ),
+            (
+                1024,
+                "42214739f095a406f3fc83deb889744ac00df831c10daa55189b5d121c855af7",
+            ),
+            (
+                1025,
+                "d00278ae47eb27b34faecf67b4fe263f82d5412916c1ffd97c8cb7fb814b8444",
+            ),
+        ];
+
+        for (len, expected_hex) in cases {
+            let input = input_of_len(*len);
+            let cid = Cid::from_canonical_bytes(CidCodec::Raw, &input);
+            let expected: Vec<u8> = (0..expected_hex.len())
+                .step_by(2)
+                .map(|i| u8::from_str_radix(&expected_hex[i..i + 2], 16).unwrap())
+                .collect();
+            assert_eq!(
+                cid.digest().as_bytes().as_slice(),
+                expected.as_slice(),
+                "mismatch for input_len={len}"
+            );
+        }
+    }
+
+    #[test]
+    fn cid_from_canonical_bytes_is_deterministic_and_codec_sensitive() {
+        let a = Cid::from_canonical_bytes(CidCodec::DagCbor, b"hello");
+        let b = Cid::from_canonical_bytes(CidCodec::DagCbor, b"hello");
+        assert_eq!(a, b);
+        assert_eq!(a.codec(), CidCodec::DagCbor);
+
+        let raw = Cid::from_canonical_bytes(CidCodec::Raw, b"hello");
+        assert_eq!(
+            raw.digest(),
+            a.digest(),
+            "same bytes, same digest regardless of codec"
+        );
+        assert_eq!(raw.codec(), CidCodec::Raw);
+        assert_ne!(
+            a, raw,
+            "codec is part of CID identity even with an equal digest"
+        );
+
+        let different = Cid::from_canonical_bytes(CidCodec::DagCbor, b"goodbye");
+        assert_ne!(a, different);
     }
 
     fn plain_object() -> Object {
