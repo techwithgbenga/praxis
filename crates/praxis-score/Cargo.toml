@@ -18,4 +18,4 @@ workspace = true
 name = "praxis_score"
 
 [dependencies]
-praxis-types = { path = "../praxis-types" }
+praxis-types = { path = "../praxis-types", version = "0.1.0" }

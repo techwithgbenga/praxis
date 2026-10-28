@@ -47,7 +47,7 @@ Each task: **ID · description · acceptance criteria (AC)**. Size: S (<½ day) 
 ## M3: Scoring, resolution, policy, attestation
 | ID | Task | AC |
 |---|---|---|
-| M3-01 (L) | `praxis-score` per SCORING.md (Brier, log, BSS, adaptive bins, Wilson, ECE, bootstrap w/ ChaCha20 seed, Murphy, AUC, overconfidence, labels) | Golden vectors; TS port matches ≤1e-9; proptests (BS∈[0,1], BSS≤1, bin counts ≥10); degenerate inputs handled |
+| M3-01 (L) | `praxis-score` per SCORING.md (Brier, log, BSS, adaptive bins, Wilson, ECE, bootstrap w/ ChaCha20 seed, Murphy, AUC, overconfidence, labels) | Golden vectors; TS port matches ≤1e-9; proptests (`BS∈[0,1]`, BSS≤1, bin counts ≥10); degenerate inputs handled |
 | M3-02 (L) | **CEL resolution engine**: whitelisted functions, time/memory bounds, evidence freezing, observation-provider trait, `void(unobservable)` semantics | Malicious/expensive expressions are bounded; deterministic re-evaluation from frozen evidence |
 | M3-03 (M) | **Cedar integration**: baseline policy compiled in, `forbid` overrides, policy eval API | Tests: no config can weaken baseline `forbid`s |
 | M3-04 (M) | `close`, `calibration`, reminders, coverage/void/abandon/anchored stats | CLI output matches SCORING §5–§6 labels and the causality caveat |

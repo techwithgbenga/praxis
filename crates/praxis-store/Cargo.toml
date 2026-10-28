@@ -18,5 +18,5 @@ workspace = true
 name = "praxis_store"
 
 [dependencies]
-praxis-types = { path = "../praxis-types" }
-praxis-validate = { path = "../praxis-validate" }
+praxis-types = { path = "../praxis-types", version = "0.1.0" }
+praxis-validate = { path = "../praxis-validate", version = "0.1.0" }

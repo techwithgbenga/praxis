@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Pinned per docs/TECH_STACK.md §4 ("latest stable minus 0, bumped monthly").
-# TODO: once Rust is installed locally, run `rustup show` and bump `channel` to the
-# actual current stable release, then keep it current via Renovate/monthly review.
+# Bumped after installing rustup locally and checking `rustup run stable rustc
+# --version`; keep current via Renovate/monthly review.
 [toolchain]
-channel = "1.83.0"
+channel = "1.99.1"
 components = ["rustfmt", "clippy"]
 profile = "default"

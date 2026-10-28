@@ -3,7 +3,7 @@
 //! dag-cbor decode, identity/signature resolution, causal (`prev`/`ts`) checks, and
 //! the case-lifecycle rules C1-C8 (`spec/PROTOCOL.md` §6).
 //!
-//! Errors are typed (`thiserror`), with stable `E_*` codes (AGENTS.md §3 DoD).
+//! Errors are typed (`thiserror`), with stable `E_*` codes (AGENTS.md §3 `DoD`).
 //!
 //! M1-02 (codec), M1-03 (CIDs) and M1-07 fill this in.
 #![forbid(unsafe_code)]

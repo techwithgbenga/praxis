@@ -19,4 +19,4 @@ name = "praxis_wasm"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-praxis-core = { path = "../praxis-core" }
+praxis-core = { path = "../praxis-core", version = "0.1.0" }

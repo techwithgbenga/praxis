@@ -18,12 +18,12 @@ workspace = true
 name = "praxis_core"
 
 [dependencies]
-praxis-types = { path = "../praxis-types" }
-praxis-crypto = { path = "../praxis-crypto" }
-praxis-identity = { path = "../praxis-identity" }
-praxis-validate = { path = "../praxis-validate" }
-praxis-store = { path = "../praxis-store" }
-praxis-policy = { path = "../praxis-policy" }
-praxis-score = { path = "../praxis-score" }
-praxis-surprise = { path = "../praxis-surprise" }
-praxis-sync = { path = "../praxis-sync" }
+praxis-types = { path = "../praxis-types", version = "0.1.0" }
+praxis-crypto = { path = "../praxis-crypto", version = "0.1.0" }
+praxis-identity = { path = "../praxis-identity", version = "0.1.0" }
+praxis-validate = { path = "../praxis-validate", version = "0.1.0" }
+praxis-store = { path = "../praxis-store", version = "0.1.0" }
+praxis-policy = { path = "../praxis-policy", version = "0.1.0" }
+praxis-score = { path = "../praxis-score", version = "0.1.0" }
+praxis-surprise = { path = "../praxis-surprise", version = "0.1.0" }
+praxis-sync = { path = "../praxis-sync", version = "0.1.0" }

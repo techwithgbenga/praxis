@@ -32,7 +32,7 @@ vet:
     cargo vet check
 
 docs:
-    cargo doc --workspace --no-deps --document-private-items=false
+    cargo doc --workspace --no-deps
     python scripts/gen_mdbook_src.py
     mdbook build mdbook
 

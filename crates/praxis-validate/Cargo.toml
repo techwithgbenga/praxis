@@ -18,6 +18,6 @@ workspace = true
 name = "praxis_validate"
 
 [dependencies]
-praxis-types = { path = "../praxis-types" }
-praxis-crypto = { path = "../praxis-crypto" }
-praxis-identity = { path = "../praxis-identity" }
+praxis-types = { path = "../praxis-types", version = "0.1.0" }
+praxis-crypto = { path = "../praxis-crypto", version = "0.1.0" }
+praxis-identity = { path = "../praxis-identity", version = "0.1.0" }

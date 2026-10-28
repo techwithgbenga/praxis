@@ -47,5 +47,7 @@ Run `just docs` (not `mdbook build mdbook` directly) or the pages below won't ex
 - [Security](SECURITY.md)
 - [Ethics](ETHICS.md)
 - [Licensing](LICENSING.md)
+- [Licenses (full texts)](LICENSES/README.md)
 - [Roadmap](ROADMAP.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Architecture Decision Records](adr/README.md)

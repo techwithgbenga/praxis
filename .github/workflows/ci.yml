@@ -24,7 +24,11 @@ jobs:
       - name: Install just, cargo-deny, cargo-audit, cargo-vet, mdbook
         uses: taiki-e/install-action@v2
         with:
-          tool: just,cargo-deny,cargo-audit,cargo-vet,mdbook,mdbook-linkcheck
+          # mdbook is pinned to 0.4.x: mdbook-linkcheck 0.7.7 (latest as of this
+          # writing) speaks the 0.4.x preprocessor/renderer protocol and fails
+          # with a CLI-parsing error under mdbook 0.5.x. Bump both together once
+          # a compatible mdbook-linkcheck release exists; see mdbook/book.toml.
+          tool: just,cargo-deny,cargo-audit,cargo-vet,mdbook@0.4.52,mdbook-linkcheck@0.7.7
 
       - name: Set up Python (helper scripts)
         uses: actions/setup-python@v5

@@ -20,4 +20,4 @@ name = "praxis_ffi"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-praxis-core = { path = "../praxis-core" }
+praxis-core = { path = "../praxis-core", version = "0.1.0" }

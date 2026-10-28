@@ -37,8 +37,22 @@ FILES = [
     "LICENSING.md",
     "ROADMAP.md",
     "CODE_OF_CONDUCT.md",
+    "scripts/publish.sh",
 ]
 DIRS = ["docs", "spec", "adr", "packs", "LICENSES"]
+
+# mdbook-linkcheck resolves a directory link like `[x](LICENSES/)` to
+# `LICENSES/README.md`, but that directory is just license texts (no README
+# needed in the real repo). Synthesize one in the staged copy only.
+SYNTHETIC_README = {
+    "LICENSES/README.md": (
+        "# Licenses\n\nFull texts for every SPDX identifier this project uses "
+        "(see [LICENSING.md](../LICENSING.md)):\n\n"
+        "- [Apache-2.0](Apache-2.0.txt)\n"
+        "- [AGPL-3.0-or-later](AGPL-3.0-or-later.txt)\n"
+        "- [CC-BY-4.0](CC-BY-4.0.txt)\n"
+    ),
+}
 
 
 def clean() -> None:
@@ -60,7 +74,9 @@ def main() -> int:
         if not src.exists():
             print(f"warning: {rel} listed but missing, skipping")
             continue
-        shutil.copy2(src, DEST / rel)
+        dest = DEST / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dest)
 
     for rel in DIRS:
         src = REPO_ROOT / rel
@@ -68,6 +84,9 @@ def main() -> int:
             print(f"warning: {rel}/ listed but missing, skipping")
             continue
         shutil.copytree(src, DEST / rel)
+
+    for rel, content in SYNTHETIC_README.items():
+        (DEST / rel).write_text(content, encoding="utf-8")
 
     print(f"staged mdbook/src from {len(FILES)} files + {len(DIRS)} directories.")
     return 0

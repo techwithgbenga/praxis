@@ -15,7 +15,7 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-praxis-types = { path = "../praxis-types" }
-praxis-sync = { path = "../praxis-sync" }
-praxis-store = { path = "../praxis-store" }
-praxis-policy = { path = "../praxis-policy" }
+praxis-types = { path = "../praxis-types", version = "0.1.0" }
+praxis-sync = { path = "../praxis-sync", version = "0.1.0" }
+praxis-store = { path = "../praxis-store", version = "0.1.0" }
+praxis-policy = { path = "../praxis-policy", version = "0.1.0" }

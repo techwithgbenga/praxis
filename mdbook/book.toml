@@ -13,6 +13,14 @@ build-dir = "../book"
 git-repository-url = "https://github.com/techwithgbenga/praxis"
 edit-url-template = "https://github.com/techwithgbenga/praxis/edit/main/{path}"
 
-[preprocessor.linkcheck]
-# cargo install mdbook-linkcheck
+[output.linkcheck]
+# cargo install mdbook-linkcheck. This is an `[output.*]` *renderer*, not a
+# `[preprocessor.*]` (mdbook-linkcheck checks the already-rendered book).
+#
+# Known incompatibility: mdbook-linkcheck 0.7.7 (latest as of this writing)
+# does not understand mdbook 0.5.x's renderer-invocation CLI and fails with
+# "Found argument 'html' which wasn't expected" (silently, with exit 0, so the
+# build looks fine but nothing gets checked). Use mdbook 0.4.x until a newer
+# mdbook-linkcheck release exists (see .github/workflows/ci.yml).
 follow-web-links = false
+warning-policy = "error"
