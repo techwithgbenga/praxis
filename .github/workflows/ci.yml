@@ -37,6 +37,42 @@ jobs:
       - name: just ci
         run: just ci
 
+  vectors-ts:
+    # M1-09 (docs/IMPLEMENTATION_PLAN.md): the independent pure-TS verifier
+    # must pass every vector in spec/test-vectors/** too. Runs against the
+    # vectors already committed to the repo (generated deterministically by
+    # `cargo run -p praxis-validate --example gen_vectors`, M1-08) rather
+    # than regenerating them here, so this job needs no Rust toolchain.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+
+      - name: Enable corepack (pinned pnpm, sdk/ts/*/package.json)
+        run: corepack enable
+
+      - name: Install dependencies
+        working-directory: sdk/ts
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        working-directory: sdk/ts
+        run: pnpm run lint
+
+      - name: Build
+        working-directory: sdk/ts
+        run: pnpm run build
+
+      - name: Build verifier
+        working-directory: sdk/ts/verifier
+        run: pnpm run build
+
+      - name: Run vectors
+        working-directory: sdk/ts/verifier
+        run: pnpm test
+
   fuzz-smoke:
     # 60s/target smoke run (EVALUATION.md §5), not the full M1-10 nightly
     # 30-minute soak. Linux only: see crates/praxis-types/fuzz/README.md for

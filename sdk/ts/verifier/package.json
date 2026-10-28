@@ -6,16 +6,22 @@
   "type": "module",
   "private": true,
   "packageManager": "pnpm@9.15.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "node --test dist/**/*.test.js",
-    "vectors": "node --test dist/vectors.test.js"
+    "test": "node --test dist/**/*.test.js"
   },
   "devDependencies": {
     "@types/node": "22.10.5",
     "typescript": "5.7.2"
+  },
+  "dependencies": {
+    "@noble/ciphers": "^2.4.0",
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0"
   }
 }
