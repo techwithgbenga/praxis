@@ -747,6 +747,8 @@ version = "0.1.0"
 dependencies = [
  "praxis-crypto",
  "praxis-types",
+ "proptest",
+ "thiserror",
 ]
 
 [[package]]

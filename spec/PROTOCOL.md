@@ -58,11 +58,11 @@ Implementations MUST use audited libraries; see `docs/TECH_STACK.md`. Implementa
 ## 4. Identity
 
 4.1 A practitioner identity is a signed log of identity objects. Its stable identifier is
-`did:praxis:<base32lower(CID of the id-genesis object)>`.
+`did:praxis:<base32lower(CID of the id-genesis object)>` — concretely (PIP-0003), the id-genesis object's CID in its standard CIDv1 multibase string form (e.g. `bafyr4ig...`). Because that CID is not known until after the genesis object is signed, its own `author` field cannot literally hold it; `id-genesis.author` is instead the fixed sentinel `did:praxis:selfselfselfselfself`, never a real identity (PIP-0004).
 
-4.2 `id-genesis` lists initial keys: each `{kid, alg:"ed25519", pub, role, not_before, not_after?}`, with `role ∈ {root, device, recovery}` and optionally a separate **X25519 encryption key** (`enc_pub`) for HPKE.
+4.2 `id-genesis` lists initial keys: each `{kid, alg:"ed25519", pub, role, not_before, not_after?}`, with `role ∈ {root, device, recovery}` and optionally a separate **X25519 encryption key** (`enc_pub`) for HPKE. `id-genesis` MUST be signed by a key listed in its own `keys` with `role: root` (PIP-0003).
 
-4.3 `id-rotate` replaces the root key; it MUST be signed by the **current root key** *or* by a `recovery` key. `id-delegate` authorizes a device key (with optional expiry and **scope**: which kinds it may sign). `id-revoke` revokes a key from a stated effective time.
+4.3 `id-rotate` replaces the root key; it MUST be signed by the **current root key** *or* by a `recovery` key, and (PIP-0003) retires the previous root key's validity as of the rotate object's `ts` for every purpose, not merely as root. `id-delegate` authorizes a device key (with optional expiry and **scope**: which kinds it may sign); it MUST be signed by the current root or a recovery key (PIP-0003). `id-revoke` revokes a key from a stated effective time; it MUST be signed by the current root or a recovery key, or by the key being revoked itself (self-revocation, PIP-0003).
 
 4.4 **Validity of a signature** = signer key was authorized by the identity log at the object's `ts`, *and* the identity-log objects establishing that are themselves valid and causally prior.
 

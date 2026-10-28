@@ -148,6 +148,17 @@ impl Cid {
     }
 }
 
+impl std::fmt::Display for Cid {
+    /// The CID's standard `CIDv1` multibase string form (base32-lower, e.g.
+    /// `bafyr4ig...`) — verified (`spec/pips/0003-identity-log-semantics.md`)
+    /// to be ASCII, entirely within `[a-z2-7]`, and always well under 100
+    /// characters for this protocol's fixed codec/multihash choices, which is
+    /// what makes `did:praxis:<cid>` (`spec/PROTOCOL.md` §4.1) a valid `Did`.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(&self.0, f)
+    }
+}
+
 impl Serialize for Cid {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.0.serialize(serializer)
@@ -364,6 +375,58 @@ pub struct Object {
     pub unknown: BTreeMap<String, Value>,
 }
 
+impl Object {
+    /// The canonical dag-cbor bytes of this object **with the `sig` field
+    /// entirely absent** — the `canonical_bytes(object_without_sig)` half of
+    /// `spec/PROTOCOL.md` §5.2's `sig = Ed25519.sign(signer_secret,
+    /// "praxis/v1/object\x00" || canonical_bytes(object_without_sig))`.
+    /// Callers that need the full signing/verification input still have to
+    /// prepend the domain-separation prefix themselves (or just call
+    /// `praxis_crypto::sign_object`/`verify_object`, which do).
+    ///
+    /// Implemented via a separate, sig-less struct rather than by patching
+    /// bytes after the fact: canonical dag-cbor map keys are always sorted by
+    /// (length, then bytewise) regardless of source field order (verified in
+    /// M1-02), so this produces byte-identical output to "this object's map,
+    /// minus the `sig` entry" without needing to duplicate that ordering logic.
+    ///
+    /// # Errors
+    /// See [`crate::CodecError::Encode`].
+    pub fn canonical_signing_bytes(&self) -> Result<Vec<u8>, crate::CodecError> {
+        #[derive(Serialize)]
+        struct SigningView<'a> {
+            v: FormatVersion,
+            kind: Kind,
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            case: Option<Cid>,
+            prev: &'a [Cid],
+            author: &'a Did,
+            signer: &'a Kid,
+            ts: Ts,
+            suite: Suite,
+            body: &'a Body,
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            crit: Option<&'a Vec<String>>,
+            #[serde(flatten)]
+            unknown: &'a BTreeMap<String, Value>,
+        }
+
+        crate::encode_canonical(&SigningView {
+            v: self.v,
+            kind: self.kind,
+            case: self.case,
+            prev: &self.prev,
+            author: &self.author,
+            signer: &self.signer,
+            ts: self.ts,
+            suite: self.suite,
+            body: &self.body,
+            crit: self.crit.as_ref(),
+            unknown: &self.unknown,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
@@ -422,6 +485,17 @@ mod tests {
     }
 
     #[test]
+    fn cid_display_is_base32_lower_and_fits_the_did_pattern() {
+        let cid = Cid::from_canonical_bytes(CidCodec::DagCbor, b"hello world");
+        let s = cid.to_string();
+        assert!((20..=100).contains(&s.len()), "len={}", s.len());
+        assert!(
+            s.chars().all(|c| matches!(c, 'a'..='z' | '2'..='7')),
+            "{s:?}"
+        );
+    }
+
+    #[test]
     fn cid_from_canonical_bytes_is_deterministic_and_codec_sensitive() {
         let a = Cid::from_canonical_bytes(CidCodec::DagCbor, b"hello");
         let b = Cid::from_canonical_bytes(CidCodec::DagCbor, b"hello");
@@ -475,6 +549,50 @@ mod tests {
     #[test]
     fn plain_object_roundtrips() {
         roundtrip(&plain_object());
+    }
+
+    #[test]
+    fn canonical_signing_bytes_excludes_sig_but_nothing_else() {
+        use ipld_core::ipld::Ipld;
+
+        let obj = plain_object();
+        let bytes = obj.canonical_signing_bytes().unwrap();
+        let generic: Ipld = serde_ipld_dagcbor::from_slice(&bytes).unwrap();
+        let Ipld::Map(map) = generic else {
+            panic!("expected a map")
+        };
+        let keys: std::collections::BTreeSet<&str> = map.keys().map(String::as_str).collect();
+        assert!(!keys.contains("sig"), "sig must be absent: {keys:?}");
+        assert_eq!(
+            keys,
+            ["v", "kind", "prev", "author", "signer", "ts", "suite", "body"]
+                .into_iter()
+                .collect::<std::collections::BTreeSet<_>>(),
+            "every other field must be present (this object has no case/crit/unknown)"
+        );
+    }
+
+    #[test]
+    fn canonical_signing_bytes_ignores_sig_value() {
+        let mut a = plain_object();
+        let mut b = plain_object();
+        a.sig = crate::scalar::Sig::new([1u8; 64]);
+        b.sig = crate::scalar::Sig::new([2u8; 64]);
+        assert_eq!(
+            a.canonical_signing_bytes().unwrap(),
+            b.canonical_signing_bytes().unwrap()
+        );
+    }
+
+    #[test]
+    fn canonical_signing_bytes_changes_with_any_other_field() {
+        let base = plain_object();
+        let mut changed = plain_object();
+        changed.ts = Ts::from_millis(base.ts.as_millis() + 1);
+        assert_ne!(
+            base.canonical_signing_bytes().unwrap(),
+            changed.canonical_signing_bytes().unwrap()
+        );
     }
 
     #[test]
