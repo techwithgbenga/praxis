@@ -32,13 +32,24 @@ fn key_entry(kid: &str, role: KeyRole, secret: &SecretKey, not_before: u64) -> K
     }
 }
 
+/// Round-trips `content` through canonical bytes into the generic `Value`
+/// the object's `body.plain` field actually holds on the wire (mirrors how a
+/// real object is built; see `events.rs`'s `content_to_value`, which this is
+/// the identity-specific twin of). Embedding the *real* content here, not a
+/// `Value::Null` placeholder, matters: without it, nothing — not even this
+/// same generator — ever proves the content is actually recoverable from the
+/// object's own dag-cbor bytes, which is the entire point of an independent
+/// second implementation (M1-09) decoding these vectors.
 fn signed_object(
     kind: Kind,
     signer_kid: &str,
     author: &str,
     ts: u64,
     secret: &SecretKey,
+    content: &IdContent,
 ) -> praxis_types::Object {
+    let content_bytes = praxis_types::encode_canonical(content).unwrap();
+    let plain: Value = praxis_types::decode_canonical(&content_bytes).unwrap();
     let mut obj = praxis_types::Object {
         v: FormatVersion,
         kind,
@@ -49,7 +60,7 @@ fn signed_object(
         ts: Ts::from_millis(ts),
         suite: Suite::Pxs1,
         body: Body::Plain(PlainBody {
-            plain: Value::Null,
+            plain,
             salt: [0u8; 16],
             pad: None,
         }),
@@ -94,6 +105,7 @@ fn genesis_rotate_delegate_chain() {
         GENESIS_AUTHOR_SENTINEL,
         0,
         &root1,
+        &genesis_content,
     );
     let mut log = IdentityLog::genesis(&genesis_obj, &genesis_content).unwrap();
     let did = log.did().clone();
@@ -103,7 +115,14 @@ fn genesis_rotate_delegate_chain() {
         keys: Some(vec![key_entry("root-2", KeyRole::Root, &root2, 1000)]),
         revoke: None,
     };
-    let rotate_obj = signed_object(Kind::IdRotate, "root-1", did.as_str(), 1000, &root1);
+    let rotate_obj = signed_object(
+        Kind::IdRotate,
+        "root-1",
+        did.as_str(),
+        1000,
+        &root1,
+        &rotate_content,
+    );
     log.apply(&rotate_obj, &rotate_content).unwrap();
 
     let delegate_content = IdContent {
@@ -111,7 +130,14 @@ fn genesis_rotate_delegate_chain() {
         keys: Some(vec![key_entry("device-1", KeyRole::Device, &device1, 2000)]),
         revoke: None,
     };
-    let delegate_obj = signed_object(Kind::IdDelegate, "root-2", did.as_str(), 2000, &root2);
+    let delegate_obj = signed_object(
+        Kind::IdDelegate,
+        "root-2",
+        did.as_str(),
+        2000,
+        &root2,
+        &delegate_content,
+    );
     log.apply(&delegate_obj, &delegate_content).unwrap();
 
     let queries = [
@@ -166,7 +192,14 @@ fn privilege_escalation_rejected() {
         keys: Some(vec![key_entry("root-1", KeyRole::Root, &root, 0)]),
         revoke: None,
     };
-    let genesis_obj = signed_object(Kind::IdGenesis, "root-1", GENESIS_AUTHOR_SENTINEL, 0, &root);
+    let genesis_obj = signed_object(
+        Kind::IdGenesis,
+        "root-1",
+        GENESIS_AUTHOR_SENTINEL,
+        0,
+        &root,
+        &genesis_content,
+    );
     let mut log = IdentityLog::genesis(&genesis_obj, &genesis_content).unwrap();
     let did = log.did().clone();
 
@@ -175,7 +208,14 @@ fn privilege_escalation_rejected() {
         keys: Some(vec![key_entry("device-1", KeyRole::Device, &device, 100)]),
         revoke: None,
     };
-    let delegate_obj = signed_object(Kind::IdDelegate, "root-1", did.as_str(), 100, &root);
+    let delegate_obj = signed_object(
+        Kind::IdDelegate,
+        "root-1",
+        did.as_str(),
+        100,
+        &root,
+        &delegate_content,
+    );
     log.apply(&delegate_obj, &delegate_content).unwrap();
 
     // device-1 (role: device) attempts to delegate a new device key — must be
@@ -185,7 +225,14 @@ fn privilege_escalation_rejected() {
         keys: Some(vec![key_entry("device-2", KeyRole::Device, &other, 200)]),
         revoke: None,
     };
-    let bad_obj = signed_object(Kind::IdDelegate, "device-1", did.as_str(), 200, &device);
+    let bad_obj = signed_object(
+        Kind::IdDelegate,
+        "device-1",
+        did.as_str(),
+        200,
+        &device,
+        &bad_content,
+    );
     let err = log.apply(&bad_obj, &bad_content).unwrap_err();
     assert!(matches!(err, IdentityError::UnauthorizedSigner(_, _)));
 
