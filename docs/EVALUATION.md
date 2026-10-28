@@ -59,3 +59,4 @@ Format/lint clean · all tests · property tests · fuzz smoke (60 s per target)
 | Q-009 | Duress/coercion protections (plausible-deniability profiles) |
 | Q-010 | Legal discoverability and privilege for judgment records across jurisdictions |
 | Q-011 | Do agent-authored decisions (AI practitioners) belong in the same calibration framework? |
+| Q-012 | Should `Value::Link` (a CID appearing where `content` embeds one, e.g. `amend-body.target`) be explicitly rejected if it appears in a strict CDDL `value`-grammar position instead (`signal.value`, `situation.context` entries, which exclude `cid`)? Unenforced today because nothing validates domain-pack signals before M2; see `praxis_types::value`'s module docs. |

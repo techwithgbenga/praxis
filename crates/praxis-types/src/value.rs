@@ -54,7 +54,7 @@ pub struct Decimal {
 /// CBOR tag 42 ("no CBOR tags other than 42 (CID link)"). Without this
 /// variant, decoding *any* object whose content embeds a `Cid` failed outright
 /// (found while generating `spec/test-vectors/events/*` for `amend`/`outcome`).
-/// `// OPEN(Q-010)`: nothing in this crate or `praxis-validate` yet rejects a
+/// `// OPEN(Q-012)`: nothing in this crate or `praxis-validate` yet rejects a
 /// `Value::Link` appearing in a strict `value`-grammar position (domain-pack
 /// `signal.value`/`context` are not validated at all yet — domain packs are
 /// unimplemented before M2); tracked in `docs/EVALUATION.md`.
