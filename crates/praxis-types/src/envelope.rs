@@ -4,10 +4,19 @@
 
 use std::collections::BTreeMap;
 
+use ipld_core::cid::multihash::Multihash;
+use ipld_core::cid::{Cid as RawCid, Version as CidVersion};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::scalar::{Did, Hash32, Kid, Suite, Ts};
 use crate::value::Value;
+
+/// Multicodec `0x71`: dag-cbor (`spec/PROTOCOL.md` §2).
+const MULTICODEC_DAG_CBOR: u64 = 0x71;
+/// Multicodec `0x55`: raw bytes (`spec/PROTOCOL.md` §2).
+const MULTICODEC_RAW: u64 = 0x55;
+/// Multihash function code `0x1e`: BLAKE3 (`spec/PROTOCOL.md` §2).
+const MULTIHASH_BLAKE3: u64 = 0x1e;
 
 /// `v: 1` (`spec/praxis-v0.1.cddl`): the envelope format version. Fixed at `1` for
 /// spec v0.1; any other value is rejected on deserialize rather than silently
@@ -37,8 +46,7 @@ impl<'de> Deserialize<'de> for FormatVersion {
 
 /// Which multicodec a [`Cid`] addresses (`spec/PROTOCOL.md` §2): `dag-cbor` for
 /// every signed object, `raw` for blobs.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CidCodec {
     /// Multicodec `0x71`: a canonical dag-cbor-encoded object.
     DagCbor,
@@ -46,27 +54,109 @@ pub enum CidCodec {
     Raw,
 }
 
-/// `cid = #6.42(bstr)` (`spec/praxis-v0.1.cddl`): a `CIDv1`, always BLAKE3-256
-/// (`spec/PROTOCOL.md` §2).
-///
-/// Scope note: this models a CID as `{codec, digest}` rather than its exact
-/// multiformats binary encoding (varint-prefixed multicodec + multihash). That
-/// binary form, and computing a `Cid` from an object's canonical bytes, is
-/// `praxis-types`' M1-03 task ("`CIDv1` (dag-cbor, blake3-256)"); this shape is
-/// what the rest of the envelope needs in the meantime.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct Cid {
-    /// The multicodec this CID addresses.
-    pub codec: CidCodec,
-    /// The BLAKE3-256 digest.
-    pub digest: Hash32,
+impl CidCodec {
+    fn to_multicodec(self) -> u64 {
+        match self {
+            Self::DagCbor => MULTICODEC_DAG_CBOR,
+            Self::Raw => MULTICODEC_RAW,
+        }
+    }
+
+    fn from_multicodec(code: u64) -> Option<Self> {
+        match code {
+            MULTICODEC_DAG_CBOR => Some(Self::DagCbor),
+            MULTICODEC_RAW => Some(Self::Raw),
+            _ => None,
+        }
+    }
 }
 
+/// `cid = #6.42(bstr)` (`spec/praxis-v0.1.cddl`): a `CIDv1`, restricted to the
+/// exact multicodec/multihash combinations this protocol uses
+/// (`spec/PROTOCOL.md` §2: dag-cbor or raw, always BLAKE3-256). Wraps
+/// [`ipld_core::cid::Cid`] (which already round-trips correctly through CBOR
+/// tag 42 — see `spec/PROTOCOL.md` §3.1) rather than re-implementing
+/// multiformats binary encoding.
+///
+/// `Deserialize` re-validates every constraint CDDL leaves to prose: version
+/// must be 1, the multicodec must be `dag-cbor`/`raw`, the multihash function
+/// must be BLAKE3, and the digest must be exactly 32 bytes. An
+/// `ipld_core::cid::Cid` that merely parses as *some* valid CID is not enough.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Cid(RawCid);
+
 impl Cid {
-    /// Builds a `Cid` from its codec and digest.
+    /// Builds a `Cid` from its codec and a 32-byte BLAKE3-256 digest.
+    ///
+    /// # Panics
+    /// Never, in practice: `Hash32` is always exactly 32 bytes, which always
+    /// fits the 64-byte multihash buffer.
     #[must_use]
     pub fn new(codec: CidCodec, digest: Hash32) -> Self {
-        Self { codec, digest }
+        let mh = Multihash::<64>::wrap(MULTIHASH_BLAKE3, digest.as_bytes().as_slice())
+            .expect("a 32-byte digest always fits a 64-byte multihash buffer");
+        Self(RawCid::new_v1(codec.to_multicodec(), mh))
+    }
+
+    /// This CID's multicodec.
+    ///
+    /// # Panics
+    /// Never: every `Cid` is constructed via [`Cid::new`] or decoded via
+    /// `Deserialize` (which rejects unsupported multicodecs), so one is always present.
+    #[must_use]
+    pub fn codec(&self) -> CidCodec {
+        CidCodec::from_multicodec(self.0.codec())
+            .expect("only constructible, or decodable, with a supported multicodec")
+    }
+
+    /// This CID's 32-byte BLAKE3-256 digest.
+    ///
+    /// # Panics
+    /// Never: every `Cid` is constructed via [`Cid::new`] (always 32 bytes) or
+    /// decoded via `Deserialize` (which rejects any other digest length).
+    #[must_use]
+    pub fn digest(&self) -> Hash32 {
+        let bytes: [u8; 32] = self
+            .0
+            .hash()
+            .digest()
+            .try_into()
+            .expect("only constructible, or decodable, with a 32-byte digest");
+        Hash32::new(bytes)
+    }
+}
+
+impl Serialize for Cid {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.0.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Cid {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let raw = RawCid::deserialize(deserializer)?;
+        if raw.version() != CidVersion::V1 {
+            return Err(serde::de::Error::custom("cid must be CIDv1"));
+        }
+        if CidCodec::from_multicodec(raw.codec()).is_none() {
+            return Err(serde::de::Error::custom(format!(
+                "unsupported CID multicodec {:#x} (expected dag-cbor 0x71 or raw 0x55)",
+                raw.codec()
+            )));
+        }
+        let hash = raw.hash();
+        if hash.code() != MULTIHASH_BLAKE3 {
+            return Err(serde::de::Error::custom(format!(
+                "unsupported CID multihash code {:#x} (expected BLAKE3 0x1e)",
+                hash.code()
+            )));
+        }
+        if hash.digest().len() != 32 {
+            return Err(serde::de::Error::custom(
+                "CID digest must be exactly 32 bytes",
+            ));
+        }
+        Ok(Self(raw))
     }
 }
 

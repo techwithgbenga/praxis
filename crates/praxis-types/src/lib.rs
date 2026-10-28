@@ -14,11 +14,16 @@
 #![deny(missing_docs)]
 
 mod bytes_serde;
+mod codec;
 mod content;
 mod envelope;
 mod error;
 mod scalar;
 mod value;
+
+pub use codec::{
+    decode_object, encode_object, CodecError, MAX_ARRAY_ITEMS, MAX_NESTING_DEPTH, MAX_OBJECT_BYTES,
+};
 
 pub use content::{
     AbandonBody, AmendBody, AnchorBody, AnchorMethod, AttestBody, AttestCounts, AttestType,

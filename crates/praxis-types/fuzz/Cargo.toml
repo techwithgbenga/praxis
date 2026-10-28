@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+# Deliberately excluded from the main workspace (standard cargo-fuzz
+# convention): this crate needs nightly + sanitizer flags the rest of the
+# workspace does not, and should not perturb its dependency resolution.
+[workspace]
+
+[package]
+name = "praxis-types-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.praxis-types]
+path = ".."
+
+[[bin]]
+name = "decode_object"
+path = "fuzz_targets/decode_object.rs"
+test = false
+doc = false
+bench = false

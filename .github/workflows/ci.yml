@@ -38,10 +38,20 @@ jobs:
         run: just ci
 
   fuzz-smoke:
-    # TODO(M1-10): flip to `runs-on: ubuntu-latest` + `just fuzz-smoke` once the
-    # praxis-validate fuzz targets exist; nightly-only, not part of the required PR gate.
-    if: false
+    # 60s/target smoke run (EVALUATION.md §5), not the full M1-10 nightly
+    # 30-minute soak. Linux only: see crates/praxis-types/fuzz/README.md for
+    # why Windows needs a matching standalone ASan runtime this job doesn't.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "placeholder until M1-10"
+
+      - name: Install nightly Rust (cargo-fuzz requires it)
+        uses: dtolnay/rust-toolchain@nightly
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install just, cargo-fuzz
+        uses: taiki-e/install-action@v2
+        with: { tool: just,cargo-fuzz }
+
+      - run: just fuzz-smoke

@@ -55,8 +55,13 @@ spdx-check:
 dco-check:
     python scripts/check_dco.py
 
+# 60s/target smoke run (EVALUATION.md §5). Requires nightly + cargo-fuzz; on
+# Windows also requires an ASan runtime whose build matches the nightly
+# toolchain's expected LLVM ABI exactly, or the target fails to even start
+# with STATUS_DLL_INIT_FAILED (see crates/praxis-types/fuzz/README.md) — CI
+# runs this on ubuntu-latest, where that pairing just works.
 fuzz-smoke:
-    echo "TODO(M1-10): cargo-fuzz targets land with praxis-validate; smoke-run each 60s here."
+    cargo +nightly fuzz run --fuzz-dir crates/praxis-types/fuzz decode_object -- -max_total_time=60
 
 # Convenience: everything `just ci` runs, plus the nightly-only fuzz smoke.
 ci-full: ci fuzz-smoke
