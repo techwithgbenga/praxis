@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "praxis-score"
+description = "Praxis calibration & scoring: Brier/log score, BSS, adaptive bins, Wilson intervals, ECE, bootstrap CIs (spec/SCORING.md). Pure functions, NO I/O (docs/ARCHITECTURE.md §3)."
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license = "Apache-2.0"
+publish.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+name = "praxis_score"
+
+[dependencies]
+praxis-types = { path = "../praxis-types" }

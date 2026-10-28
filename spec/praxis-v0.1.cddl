@@ -1,0 +1,169 @@
+; SPDX-License-Identifier: Apache-2.0
+; Praxis Protocol v0.1-draft: normative object schemas (CDDL, RFC 8610)
+; Encoding: dag-cbor (deterministic). NO floating point anywhere (see PROTOCOL.md §3).
+
+; ---------- scalar types ----------
+cid        = #6.42(bstr)                     ; IPLD link (CIDv1, blake3-256)
+ts         = uint                            ; ms since Unix epoch, UTC
+ppm        = 0..1000000                      ; probability, parts per million
+mnat       = uint                            ; milli-nats
+did        = tstr .regexp "did:praxis:[a-z2-7]{20,100}"
+kid        = tstr .size (1..64)
+sig        = bstr .size 64
+hash32     = bstr .size 32
+shorttext  = tstr .size (1..256)
+text       = tstr .size (0..16384)
+suite      = "pxs1"
+value      = null / bool / int / tstr / bstr / [* value] / {* tstr => value}   ; JSON-like, NO floats
+decimal    = { m: int, e: int }              ; m * 10^e
+
+; ---------- envelope ----------
+kind-identity    = "id-genesis" / "id-rotate" / "id-delegate" / "id-revoke"
+kind-case        = "open" / "prediction" / "decision" / "claims" / "elicitation" /
+                   "outcome" / "amend" / "retract" / "abandon"
+kind-lineage     = "grant" / "derive" / "diverge" / "canon"
+kind-attestation = "anchor" / "attest"
+kind = kind-identity / kind-case / kind-lineage / kind-attestation
+
+object = {
+  v: 1,
+  kind: kind,
+  ? case: cid,                    ; omitted on "open" (its own ID is the case ID)
+  prev: [* cid],                  ; causal parents
+  author: did,                    ; for id-genesis: self-referential; see PROTOCOL §4.1
+  signer: kid,
+  ts: ts,
+  suite: suite,
+  body: body,
+  sig: sig,
+  ? crit: [+ tstr],
+  * tstr => value                 ; unknown fields preserved and signed
+}
+
+body = plain-body / sealed-body
+plain-body  = { plain: content, salt: bstr .size 16, ? pad: bstr }
+sealed-body = {
+  sealed: { alg: "xc20p", nonce: bstr .size 24, ct: bstr },
+  commit: hash32,
+  ? rcpt: [* recipient]
+}
+recipient = { kid: kid, enc: bstr, wrapped: bstr }      ; HPKE (RFC 9180) encapsulation + sealed key
+
+content = id-content / open-body / prediction-body / decision-body / claims-body /
+          elicitation-body / outcome-body / amend-body / retract-body / abandon-body /
+          grant-body / derive-body / diverge-body / canon-body / anchor-body / attest-body
+
+; ---------- identity ----------
+key-entry = {
+  kid: kid, alg: "ed25519", pub: bstr .size 32,
+  role: "root" / "device" / "recovery",
+  ? enc_pub: bstr .size 32,                              ; X25519 for HPKE
+  not_before: ts, ? not_after: ts,
+  ? scope: [+ kind]                                      ; for devices
+}
+id-content = {
+  op: "genesis" / "rotate" / "delegate" / "revoke",
+  ? keys: [+ key-entry],
+  ? revoke: { kid: kid, effective: ts, ? compromised_since: ts }
+}
+
+; ---------- case events ----------
+stakes = {
+  reversibility: "reversible" / "costly" / "irreversible",
+  impact: 1..5,
+  time_pressure: "none" / "minutes" / "seconds"
+}
+signal = { name: shorttext, value: value, ? unit: shorttext, ? observed: ts }
+situation = {
+  summary: text,
+  signals: [* signal],
+  context: { * tstr => value },                          ; domain-pack governed
+  ? attachments: [* cid]
+}
+usage = {
+  retrieval: "none" / "self" / "team" / "lineage" / "public",
+  training:  "none" / "self" / "team" / "lineage" / "public",
+  calibration_publication: bool,
+  employment_evaluation: false,                          ; FIXED false (PROTOCOL §10.5)
+  ? expires: ts
+}
+open-body = {
+  domain: shorttext,                                     ; "pack-id@semver"
+  situation: situation,
+  stakes: stakes,
+  usage: usage,
+  ? tags: [* shorttext]
+}
+model-ref = { id: shorttext, digest: hash32, ? build: cid }
+option-prob = { option: shorttext, p: ppm }
+prediction-body = { model: model-ref, options: [+ option-prob], ? rationale_refs: [* cid] }
+decision-body = {
+  options_considered: [+ shorttext],
+  chosen: shorttext,
+  ? reasoning: text,
+  ? confidence: ppm
+}
+resolution = cel-resolution / attested-resolution
+cel-resolution = { kind: "cel", expr: text, inputs: [* shorttext] }
+attested-resolution = { kind: "attested", by: "self" / "peer" / "registry", rubric: text }
+claim = {
+  id: shorttext, statement: text, p: ppm,
+  resolve: resolution, horizon: ts,
+  ? core: bool,                                          ; pack-defined core claim
+  ? late: bool                                           ; only in amend; excluded from scoring
+}
+claims-body = { claims: [+ claim] }
+qa = { q: text, ? choices: [* shorttext], a: text, ? choice_index: uint, latency_ms: uint, ? declined: bool }
+elicitation-body = {
+  trigger: { surprise_mnat: mnat, stakes_weight: ppm,
+             budget_state: { used_today: uint, cap_today: uint } },
+  qa: [+ qa],
+  modality: "text" / "voice",
+  template: shorttext                                    ; question-template id (for RU bandit)
+}
+evidence = { kind: "observation" / "link" / "note" / "blob",
+             ? ref: cid, ? uri: tstr, ? note: text, ? at: ts }
+claim-result = {
+  claim: shorttext,
+  result: "true" / "false" / "void",
+  attributed: "auto" / "peer" / "self",
+  evidence: [* evidence],
+  ? void_reason: "premise_invalid" / "action_not_taken" / "unobservable" / "superseded"
+}
+outcome-body = { results: [+ claim-result], confounders: [* shorttext], ? narrative: text }
+amend-body = { target: cid, note: text, ? late_claims: [* claim] }
+retract-body = { reason: "consent_withdrawn" / "error" / "other", ? note: text }
+abandon-body = { reason: shorttext }
+
+; ---------- lineage ----------
+grant-body = {
+  grantee: did,
+  scope: { ? cases: [+ cid], ? domain: shorttext, ? filter: text },
+  wrapped: [* recipient],
+  terms: usage,
+  ? expires: ts
+}
+derive-body  = { from: did, domain: shorttext, ? grant: cid, note: text }
+diverge-body = { theirs: cid, mine: cid, reasoning: text, ? dimension: shorttext }
+canon-body = {
+  id: shorttext, name: shorttext, domain: shorttext,
+  editors: [+ did], inclusion_policy: text,
+  members_root: hash32, count: uint, version: uint, ? prev_version: cid
+}
+
+; ---------- attestation ----------
+anchor-body = {
+  targets: [+ cid],
+  method: "relay-receipt" / "rfc3161" / "opentimestamps",
+  proof: bstr, ? root: hash32
+}
+attest-body = {
+  type: "calibration" / "build-manifest" / "custom",
+  set_root: hash32,
+  counts: { n_opened: uint, n_scored: uint, n_void: uint, n_abandoned: uint,
+            n_retracted: uint, n_unanchored: uint },
+  ? stats: { * tstr => int },                           ; fixed-point per SCORING.md
+  ? domain: shorttext,
+  ? included: [* cid],                                  ; build-manifest
+  ? policies_checked: [* shorttext]
+}

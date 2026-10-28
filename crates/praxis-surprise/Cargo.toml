@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "praxis-surprise"
+description = "The Surprise Engine: S/w/T trigger scoring, gating, budget, adaptive threshold (docs/SURPRISE_ENGINE.md). Model-agnostic."
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license = "Apache-2.0"
+publish.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+name = "praxis_surprise"
+
+[dependencies]
+praxis-types = { path = "../praxis-types" }
+praxis-score = { path = "../praxis-score" }

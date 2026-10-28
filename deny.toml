@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: Apache-2.0
+# cargo-deny configuration. See docs/LICENSING.md §5 and ADR-0007.
+# Run: `cargo deny check` (wrapped by `just deny`).
+
+[graph]
+targets = [
+    { triple = "x86_64-unknown-linux-gnu" },
+    { triple = "x86_64-apple-darwin" },
+    { triple = "aarch64-apple-darwin" },
+    { triple = "x86_64-pc-windows-msvc" },
+]
+all-features = true
+
+[advisories]
+db-path = "~/.cargo/advisory-db"
+db-urls = ["https://github.com/rustsec/advisory-db"]
+yanked = "deny"
+ignore = []
+
+[licenses]
+version = 2
+# Default allow-list: permissive licenses only (LICENSING.md §5). AGPL/GPL are forbidden
+# outside the two server crates, which get a narrow per-crate exception below.
+allow = [
+    "Apache-2.0",
+    "MIT",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "CC0-1.0",
+    "Zlib",
+]
+confidence-threshold = 0.8
+exceptions = [
+    { allow = ["AGPL-3.0-or-later"], name = "praxis-relay" },
+    { allow = ["AGPL-3.0-or-later"], name = "praxis-registry" },
+]
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+deny = [
+    # No bespoke crypto/RNG per AGENTS.md §0.2; only the audited stack in TECH_STACK.md.
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

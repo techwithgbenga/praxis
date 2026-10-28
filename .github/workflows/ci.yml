@@ -1,0 +1,43 @@
+# SPDX-License-Identifier: Apache-2.0
+# Runs the single source of truth: `just ci` (see AGENTS.md §2, justfile).
+name: ci
+on: [push, pull_request]
+permissions: { contents: read }
+
+jobs:
+  ci:
+    strategy:
+      fail-fast: false
+      matrix: { os: [ubuntu-latest, macos-latest, windows-latest] }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: Install Rust (from rust-toolchain.toml)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install just, cargo-deny, cargo-audit, cargo-vet, mdbook
+        uses: taiki-e/install-action@v2
+        with:
+          tool: just,cargo-deny,cargo-audit,cargo-vet,mdbook,mdbook-linkcheck
+
+      - name: Set up Python (helper scripts)
+        uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+
+      - name: just ci
+        run: just ci
+
+  fuzz-smoke:
+    # TODO(M1-10): flip to `runs-on: ubuntu-latest` + `just fuzz-smoke` once the
+    # praxis-validate fuzz targets exist; nightly-only, not part of the required PR gate.
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "placeholder until M1-10"

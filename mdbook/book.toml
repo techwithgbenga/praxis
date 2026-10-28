@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+[book]
+title = "Praxis"
+description = "The open protocol for capturing, verifying, and transmitting expert judgment."
+authors = ["Praxis contributors"]
+language = "en"
+src = "src"
+
+[build]
+build-dir = "../book"
+
+[output.html]
+git-repository-url = "https://github.com/techwithgbenga/praxis"
+edit-url-template = "https://github.com/techwithgbenga/praxis/edit/main/{path}"
+
+[preprocessor.linkcheck]
+# cargo install mdbook-linkcheck
+follow-web-links = false

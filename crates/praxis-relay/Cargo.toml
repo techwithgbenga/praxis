@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+[package]
+name = "praxis-relay"
+description = "The Praxis relay: a dumb, untrusted object store + PSP/1 range-reconciliation server (docs/ARCHITECTURE.md §2, spec/PROTOCOL.md §11). AGPL per ADR-0007 (prevents a closed hosted fork)."
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license = "AGPL-3.0-or-later"
+publish.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+praxis-types = { path = "../praxis-types" }
+praxis-sync = { path = "../praxis-sync" }
+praxis-store = { path = "../praxis-store" }
+praxis-policy = { path = "../praxis-policy" }

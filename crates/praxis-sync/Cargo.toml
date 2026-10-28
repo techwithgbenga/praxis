@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "praxis-sync"
+description = "PSP/1 (Praxis Sync Protocol) client+server logic: range-based set reconciliation, pending-parent handling. Transport-agnostic (spec/PROTOCOL.md §11)."
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license = "Apache-2.0"
+publish.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+name = "praxis_sync"
+
+[dependencies]
+praxis-types = { path = "../praxis-types" }
+praxis-validate = { path = "../praxis-validate" }
+praxis-store = { path = "../praxis-store" }

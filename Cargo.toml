@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: Apache-2.0
+# Praxis Rust workspace. See docs/ARCHITECTURE.md §3 for the crate/dependency rules this
+# workspace is required to satisfy (enforced by scripts/check_dep_graph.py in `just ci`).
+
+[workspace]
+resolver = "2"
+members = [
+    "crates/praxis-types",
+    "crates/praxis-crypto",
+    "crates/praxis-identity",
+    "crates/praxis-validate",
+    "crates/praxis-store",
+    "crates/praxis-policy",
+    "crates/praxis-score",
+    "crates/praxis-surprise",
+    "crates/praxis-sync",
+    "crates/praxis-core",
+    "crates/praxis-cli",
+    "crates/praxisd",
+    "crates/praxis-wasm",
+    "crates/praxis-ffi",
+    "crates/praxis-relay",
+    "crates/praxis-registry",
+]
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+rust-version = "1.83"
+authors = ["Praxis contributors"]
+homepage = "https://github.com/techwithgbenga/praxis"
+repository = "https://github.com/techwithgbenga/praxis"
+publish = false
+
+# Shared lint posture (AGENTS.md §3, §5). Individual crates may tighten further
+# (e.g. `praxis-ffi` does not forbid unsafe_code; see its crate docs).
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "deny"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }

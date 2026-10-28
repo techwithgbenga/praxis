@@ -1,0 +1,22 @@
+{
+  "name": "@praxis/sdk",
+  "version": "0.1.0",
+  "description": "Praxis TypeScript SDK: typed wrappers over the wasm-bindgen build of praxis-core (docs/CLI_AND_API.md §4).",
+  "license": "Apache-2.0",
+  "type": "module",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": { "node": ">=22" },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint . --max-warnings=0",
+    "test": "node --test dist/**/*.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.5",
+    "eslint": "9.17.0",
+    "typescript": "5.7.2"
+  }
+}

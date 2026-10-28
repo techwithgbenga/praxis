@@ -1,0 +1,21 @@
+{
+  "name": "@praxis/verifier",
+  "version": "0.1.0",
+  "description": "Independent, pure-TypeScript (no WASM) implementation of object decode/CID/signature verification, run against spec/test-vectors/** to cross-check the Rust reference implementation (spec/PROTOCOL.md; docs/IMPLEMENTATION_PLAN.md M1-09). If Rust and this disagree on a vector, that is a spec or implementation bug: do not special-case either side.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": { "node": ">=22" },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test dist/**/*.test.js",
+    "vectors": "node --test dist/vectors.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.5",
+    "typescript": "5.7.2"
+  }
+}

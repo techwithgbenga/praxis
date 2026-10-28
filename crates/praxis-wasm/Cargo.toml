@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "praxis-wasm"
+description = "wasm-bindgen build of praxis-core for browser/Node consumers; backs the TS SDK's native path (docs/TECH_STACK.md §1)."
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license = "Apache-2.0"
+publish.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+name = "praxis_wasm"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+praxis-core = { path = "../praxis-core" }

@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "praxis-ffi"
+description = "C ABI bindings to praxis-core for mobile (UniFFI) and native embedding (docs/ARCHITECTURE.md §3, §Mobile). The one crate in the workspace permitted to use `unsafe`."
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license = "Apache-2.0"
+publish.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+# Deliberately does not inherit [lints] workspace = true: this crate's lint posture
+# differs from the rest of the workspace (unsafe_code is not forbidden here; see
+# crate docs). missing_docs is still enforced directly in src/lib.rs.
+
+[lib]
+name = "praxis_ffi"
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+praxis-core = { path = "../praxis-core" }

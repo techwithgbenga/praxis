@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "praxis-identity"
+description = "Praxis protocol: identity log (genesis/rotate/delegate/revoke), key-validity-at-time, device scope (spec/PROTOCOL.md §4)."
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license = "Apache-2.0"
+publish.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+name = "praxis_identity"
+
+[dependencies]
+praxis-types = { path = "../praxis-types" }
+praxis-crypto = { path = "../praxis-crypto" }

@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "praxis-core"
+description = "Praxis façade: the stable public API over every trust-kernel crate, used by the CLI, praxisd, WASM and FFI bindings (docs/ARCHITECTURE.md §3)."
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license = "Apache-2.0"
+publish.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+name = "praxis_core"
+
+[dependencies]
+praxis-types = { path = "../praxis-types" }
+praxis-crypto = { path = "../praxis-crypto" }
+praxis-identity = { path = "../praxis-identity" }
+praxis-validate = { path = "../praxis-validate" }
+praxis-store = { path = "../praxis-store" }
+praxis-policy = { path = "../praxis-policy" }
+praxis-score = { path = "../praxis-score" }
+praxis-surprise = { path = "../praxis-surprise" }
+praxis-sync = { path = "../praxis-sync" }

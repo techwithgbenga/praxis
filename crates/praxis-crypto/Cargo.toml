@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "praxis-crypto"
+description = "Praxis protocol: Ed25519 signing, HKDF, XChaCha20-Poly1305 AEAD, HPKE wrap/unwrap (spec/PROTOCOL.md §2, §8). Audited primitives only (AGENTS.md §0.2); no bespoke crypto."
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license = "Apache-2.0"
+publish.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+name = "praxis_crypto"
+
+[dependencies]
+praxis-types = { path = "../praxis-types" }

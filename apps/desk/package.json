@@ -1,0 +1,12 @@
+{
+  "name": "@praxis/desk",
+  "version": "0.1.0",
+  "description": "Praxis desktop app: Tauri 2 + TypeScript + React/Tailwind shell over praxis-core (docs/ARCHITECTURE.md §2, docs/TECH_STACK.md §1). Placeholder until M6-01 scaffolds the real Tauri project.",
+  "license": "Apache-2.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "lint": "echo \"apps/desk: no sources yet (M6-01 scaffolds the Tauri project); nothing to lint\""
+  }
+}
