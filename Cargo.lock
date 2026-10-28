@@ -832,6 +832,7 @@ dependencies = [
  "praxis-crypto",
  "praxis-identity",
  "praxis-types",
+ "thiserror",
 ]
 
 [[package]]

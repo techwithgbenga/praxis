@@ -21,3 +21,4 @@ name = "praxis_validate"
 praxis-types = { path = "../praxis-types", version = "0.1.0" }
 praxis-crypto = { path = "../praxis-crypto", version = "0.1.0" }
 praxis-identity = { path = "../praxis-identity", version = "0.1.0" }
+thiserror = "2.0.9"
