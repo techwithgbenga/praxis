@@ -829,9 +829,14 @@ dependencies = [
 name = "praxis-validate"
 version = "0.1.0"
 dependencies = [
+ "hex",
+ "ipld-core",
  "praxis-crypto",
  "praxis-identity",
  "praxis-types",
+ "rand 0.8.8",
+ "serde_ipld_dagcbor",
+ "serde_json",
  "thiserror",
 ]
 

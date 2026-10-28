@@ -1,0 +1,61 @@
+{
+  "description": "A genesis -> rotate -> delegate chain, with is_authorized(kid, ts) queries proving the old root is retired exactly at the rotation's ts (PIP-0003) and the delegated device key is valid only from its own not_before onward.",
+  "expected": {
+    "queries": [
+      {
+        "authorized": true,
+        "kid": "root-1",
+        "ts": 500
+      },
+      {
+        "authorized": false,
+        "kid": "root-1",
+        "ts": 1000
+      },
+      {
+        "authorized": true,
+        "kid": "root-2",
+        "ts": 1000
+      },
+      {
+        "authorized": false,
+        "kid": "root-2",
+        "ts": 999
+      },
+      {
+        "authorized": true,
+        "kid": "device-1",
+        "ts": 2000
+      },
+      {
+        "authorized": false,
+        "kid": "device-1",
+        "ts": 1999
+      }
+    ]
+  },
+  "id": "identity/chain-001-genesis-rotate-delegate",
+  "input": {
+    "objects": [
+      {
+        "dag_cbor_hex": "a961760162747300637369675840a854c3761272984163b81caa60455c1454a8cb24b829ccd96537468bf32ae8177a42e7aa30d6cd6000c06cc66a149d057fe01d74ce856df70c6b3bfc9af5ad0664626f6479a26473616c74500000000000000000000000000000000065706c61696ef6646b696e646a69642d67656e65736973647072657680657375697465647078733166617574686f72781f6469643a7072617869733a73656c6673656c6673656c6673656c6673656c66667369676e657266726f6f742d31",
+        "kind": "IdGenesis",
+        "signer": "root-1",
+        "ts": 0
+      },
+      {
+        "dag_cbor_hex": "a96176016274731903e86373696758402e7730b65637330eb5cdca5a46b316ad79b97f821578958bcefa508ef897562b1e30e4c5b8cf6b4b50f6565a351a66add6579046c7bc23b10469f3192ab5a10e64626f6479a26473616c74500000000000000000000000000000000065706c61696ef6646b696e646969642d726f74617465647072657680657375697465647078733166617574686f7278466469643a7072617869733a6261667972346965346534343578737469767a6b75703636617a616f6a63773364766e753765323276626a726c6f7561766664366862666d746271667369676e657266726f6f742d31",
+        "kind": "IdRotate",
+        "signer": "root-1",
+        "ts": 1000
+      },
+      {
+        "dag_cbor_hex": "a96176016274731907d063736967584041ddf5cd766ad0a4f2c1a31fcf24155a212c88a0d5f4c2796dbcdef2a0c28f5e909edd7785d4ac44451162423246823efc825486f3f38dcc9071d04780e5680964626f6479a26473616c74500000000000000000000000000000000065706c61696ef6646b696e646b69642d64656c6567617465647072657680657375697465647078733166617574686f7278466469643a7072617869733a6261667972346965346534343578737469767a6b75703636617a616f6a63773364766e753765323276626a726c6f7561766664366862666d746271667369676e657266726f6f742d32",
+        "kind": "IdDelegate",
+        "signer": "root-2",
+        "ts": 2000
+      }
+    ]
+  },
+  "spec": "PROTOCOL.md#4"
+}

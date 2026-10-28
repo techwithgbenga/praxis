@@ -1,0 +1,11 @@
+{
+  "description": "An integer encoded with more bytes than its shortest-form representation is rejected.",
+  "expected": {
+    "error": "E_DECODE"
+  },
+  "id": "canonical/reject-001-non-minimal-int",
+  "input": {
+    "dag_cbor_hex": "1a00000001"
+  },
+  "spec": "PROTOCOL.md#3.1"
+}

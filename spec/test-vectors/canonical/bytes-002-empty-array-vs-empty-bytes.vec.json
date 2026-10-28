@@ -1,0 +1,20 @@
+{
+  "description": "An empty array and empty bytes are different dag-cbor values (major type 4 length 0 vs. major type 2 length 0) and must decode back to different Value variants.",
+  "expected": {
+    "distinct": true,
+    "empty_array_hex": "80",
+    "empty_bytes_hex": "40"
+  },
+  "id": "canonical/bytes-002-empty-array-vs-empty-bytes",
+  "input": {
+    "empty_array": {
+      "dag_cbor_hex": "80",
+      "kind": "array"
+    },
+    "empty_bytes": {
+      "dag_cbor_hex": "40",
+      "kind": "bytes"
+    }
+  },
+  "spec": "PROTOCOL.md#3.1"
+}

@@ -1,0 +1,12 @@
+{
+  "description": "Map keys are ordered by (length, then bytewise), not lexicographically: the 1-byte key \"z\" is encoded before the 2-byte key \"aa\" even though \"aa\" < \"z\" lexicographically.",
+  "expected": {
+    "dag_cbor_hex": "a2617a0162616102"
+  },
+  "id": "canonical/map-001-key-order",
+  "input": {
+    "aa": 2,
+    "z": 1
+  },
+  "spec": "PROTOCOL.md#3.1"
+}

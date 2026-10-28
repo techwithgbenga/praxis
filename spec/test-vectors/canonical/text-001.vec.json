@@ -1,0 +1,9 @@
+{
+  "description": "NFC-normalized UTF-8 text encodes as a dag-cbor text string.",
+  "expected": {
+    "dag_cbor_hex": "6b7265706c696361206c6167"
+  },
+  "id": "canonical/text-001",
+  "input": "replica lag",
+  "spec": "PROTOCOL.md#3.3"
+}

@@ -1,0 +1,12 @@
+{
+  "description": "A byte string (dag-cbor major type 2) is distinct from an array of the same integers.",
+  "expected": {
+    "dag_cbor_hex": "43010203"
+  },
+  "id": "canonical/bytes-001",
+  "input": {
+    "hex": "010203",
+    "kind": "bytes"
+  },
+  "spec": "PROTOCOL.md#3.1"
+}

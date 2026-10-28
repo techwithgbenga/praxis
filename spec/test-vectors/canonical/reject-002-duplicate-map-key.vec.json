@@ -1,0 +1,11 @@
+{
+  "description": "A map with the same key appearing twice is rejected.",
+  "expected": {
+    "error": "E_DECODE"
+  },
+  "id": "canonical/reject-002-duplicate-map-key",
+  "input": {
+    "dag_cbor_hex": "a2616101616102"
+  },
+  "spec": "PROTOCOL.md#3.1"
+}

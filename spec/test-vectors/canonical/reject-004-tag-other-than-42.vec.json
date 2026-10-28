@@ -1,0 +1,11 @@
+{
+  "description": "Any CBOR tag other than 42 (the CID link tag) is rejected.",
+  "expected": {
+    "error": "E_DECODE"
+  },
+  "id": "canonical/reject-004-tag-other-than-42",
+  "input": {
+    "dag_cbor_hex": "c0617a"
+  },
+  "spec": "PROTOCOL.md#3.1"
+}

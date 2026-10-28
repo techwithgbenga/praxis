@@ -1,0 +1,11 @@
+{
+  "description": "No floating-point values are permitted anywhere in a signed/hashed object.",
+  "expected": {
+    "error": "E_FLOAT_NOT_ALLOWED"
+  },
+  "id": "canonical/reject-005-float",
+  "input": {
+    "dag_cbor_hex": "a16178fb3ff8000000000000"
+  },
+  "spec": "PROTOCOL.md#3.2"
+}

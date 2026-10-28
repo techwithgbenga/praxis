@@ -1,0 +1,11 @@
+{
+  "description": "An indefinite-length array is rejected (dag-cbor requires definite lengths).",
+  "expected": {
+    "error": "E_DECODE"
+  },
+  "id": "canonical/reject-003-indefinite-length",
+  "input": {
+    "dag_cbor_hex": "9f0102ff"
+  },
+  "spec": "PROTOCOL.md#3.1"
+}

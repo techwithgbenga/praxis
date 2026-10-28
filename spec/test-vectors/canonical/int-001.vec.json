@@ -1,0 +1,9 @@
+{
+  "description": "A negative integer encodes to dag-cbor's shortest-form negative integer encoding.",
+  "expected": {
+    "dag_cbor_hex": "26"
+  },
+  "id": "canonical/int-001",
+  "input": -7,
+  "spec": "PROTOCOL.md#3.2"
+}

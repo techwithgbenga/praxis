@@ -1,0 +1,36 @@
+{
+  "description": "The hand-worked Brier/BSS/log-score example from SCORING.md §9: 5 claims, reference base rate 0.6. BS=0.158, BSS=0.341667, LS=0.479995. n=5 is below the §5 'insufficient' threshold (30); this vector only checks the arithmetic, not sample-size display rules.",
+  "expected": {
+    "bs": 0.15799999999999997,
+    "bs_ref": 0.24000000000000005,
+    "bss": 0.3416666666666669,
+    "ls": 0.4799954878005391
+  },
+  "id": "scoring/basic-001",
+  "input": {
+    "claims": [
+      {
+        "p": 0.9,
+        "y": 1.0
+      },
+      {
+        "p": 0.8,
+        "y": 1.0
+      },
+      {
+        "p": 0.7,
+        "y": 0.0
+      },
+      {
+        "p": 0.6,
+        "y": 1.0
+      },
+      {
+        "p": 0.3,
+        "y": 0.0
+      }
+    ],
+    "reference_p": 0.6
+  },
+  "spec": "SCORING.md#9"
+}
