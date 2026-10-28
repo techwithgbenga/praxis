@@ -146,8 +146,10 @@ sealed = { sealed: {alg:"xc20p", nonce: bstr24, ct: bstr}, commit: hash32, [rcpt
 
 8.3 **Key hierarchy.** Per case, the author generates `CK` (32 random bytes). Event body key = `HKDF-SHA256(ikm=CK, salt="praxis/v1/bodykey", info=kind||0x00||u32(index_in_case))`. Revealing one body key reveals **only that event**. CK is stored in the author's local keystore, encrypted under a key derived from the identity root (or hardware key).
 `ct = XChaCha20-Poly1305(key=bodykey, nonce, aad=kind||case||author, plaintext)`.
+Byte encodings for the concatenations above (PIP-0001): `kind` is the UTF-8 bytes of the CDDL `kind` string (e.g. `decision`); `u32(n)` is 4 bytes big-endian; `case` is the CID's raw multiformats binary encoding (no CBOR tag-42 wrapper, no outer `bstr` length prefix); `author` is the UTF-8 bytes of the `did:praxis:...` string; `0x00` is one literal zero byte.
 
 8.4 **Recipients.** A `recipient` = `{kid, enc, wrapped}` where `wrapped` is the HPKE-sealed body key (or CK) to the recipient's `enc_pub`. A `grant` object (§10) is the normal way to give access after the fact.
+HPKE parameters (PIP-0002): mode `Base`; `info` = the fixed ASCII string `praxis/v1/wrap`; `aad` = empty.
 
 8.5 **Padding.** `ct` MUST be padded (inside the AEAD plaintext, via CBOR padding field `pad`) to the next bucket of {1 KiB, 4 KiB, 16 KiB, 64 KiB, 256 KiB}. This limits size-based leakage on relays.
 

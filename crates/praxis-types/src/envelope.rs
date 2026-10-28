@@ -135,6 +135,17 @@ impl Cid {
             .expect("only constructible, or decodable, with a 32-byte digest");
         Hash32::new(bytes)
     }
+
+    /// The CID's raw multiformats binary encoding: version + codec varint +
+    /// multihash (function-code varint + length varint + digest) — **no**
+    /// CBOR tag-42 wrapper and no outer `bstr` length prefix. This is the
+    /// `case` byte string in `aad=kind||case||author`
+    /// (`spec/pips/0001-sealing-byte-encoding.md`), not what `encode_object`
+    /// produces for a field of type `Cid`.
+    #[must_use]
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.to_bytes()
+    }
 }
 
 impl Serialize for Cid {

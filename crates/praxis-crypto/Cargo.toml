@@ -19,3 +19,25 @@ name = "praxis_crypto"
 
 [dependencies]
 praxis-types = { path = "../praxis-types", version = "0.1.0" }
+blake3 = "1.5.5"
+chacha20poly1305 = "0.11.0"
+# Pinned to the 2.x line (not the very new 3.0.0) per AGENTS.md §0.7 "boring >
+# novel": 2.x is the long-established, widely-audited version. TECH_STACK.md
+# only requires ">=2".
+ed25519-dalek = { version = "2.2.0", features = ["rand_core"] }
+hkdf = "0.13.0"
+# Default features additionally pull in `mlkem` (post-quantum); we don't need
+# that for suite pxs1 (pxs2+ is a deliberately separate, v1.0-gated effort —
+# see OPEN(Q-008) in lib.rs), so features are listed explicitly to keep the
+# PQ crates and their extra attack surface out of this build.
+hpke = { version = "0.15.1", default-features = false, features = ["x25519", "chacha", "alloc", "getrandom"] }
+rand = "0.8.5"
+# hkdf 0.13 needs the digest 0.11-based sha2; pinning sha2 to 0.10 here
+# produces two incompatible `digest` crate versions in the graph.
+sha2 = "0.11.1"
+subtle = "2.6.1"
+thiserror = "2.0.9"
+zeroize = { version = "1.9.1", features = ["derive"] }
+
+[dev-dependencies]
+hex = "0.4.3"
