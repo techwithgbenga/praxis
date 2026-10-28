@@ -8,6 +8,8 @@ use std::fmt;
 use serde::de::{MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 
+use crate::envelope::Cid;
+
 /// `decimal = { m: int, e: int }` meaning `m * 10^e` (`spec/PROTOCOL.md` §3.2):
 /// the protocol's only representation of non-integer domain data. No floats.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -41,6 +43,21 @@ pub struct Decimal {
 /// perfectly well). A hand-written `Visitor` is called directly by the
 /// format's deserializer based on the wire type it actually sees, with no
 /// buffering step to lose that information in.
+///
+/// The [`Value::Link`] variant is *not* part of the CDDL `value` grammar
+/// above (which has no `cid` alternative) — it exists because this same type
+/// is reused in two different roles (`praxis_types::envelope::PlainBody`'s
+/// doc comment): the strict `value` grammar (`signal.value`, `situation.context`
+/// entries), and a generic stand-in for `content` as a whole
+/// (`Object.body.plain`, `Object.unknown`), which legitimately embeds `cid`
+/// fields (e.g. `amend-body.target`, `evidence.ref`) that §3.1 permits via
+/// CBOR tag 42 ("no CBOR tags other than 42 (CID link)"). Without this
+/// variant, decoding *any* object whose content embeds a `Cid` failed outright
+/// (found while generating `spec/test-vectors/events/*` for `amend`/`outcome`).
+/// `// OPEN(Q-010)`: nothing in this crate or `praxis-validate` yet rejects a
+/// `Value::Link` appearing in a strict `value`-grammar position (domain-pack
+/// `signal.value`/`context` are not validated at all yet — domain packs are
+/// unimplemented before M2); tracked in `docs/EVALUATION.md`.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum Value {
@@ -61,6 +78,8 @@ pub enum Value {
     Array(Vec<Value>),
     /// `{* tstr => value}`.
     Map(BTreeMap<String, Value>),
+    /// `#6.42(bstr)`: a CID link embedded in `content` (see the variant note above).
+    Link(Cid),
 }
 
 impl<'de> Deserialize<'de> for Value {
@@ -145,6 +164,46 @@ impl<'de> Visitor<'de> for ValueVisitor {
             entries.insert(k, v);
         }
         Ok(Value::Map(entries))
+    }
+
+    // `serde_ipld_dagcbor`'s deserializer, on CBOR tag 42, calls
+    // `visitor.visit_newtype_struct` with a one-shot inner deserializer
+    // (`CidDeserializer`) that only answers `deserialize_bytes`/
+    // `deserialize_newtype_struct("$__private__serde__identifier__for__cid", _)`
+    // with the CID's raw bytes — it does *not* re-enter the newtype-struct
+    // dance a second time. `ipld_core::cid::Cid`'s own `Deserialize` impl
+    // expects to be the one driving that dance (it calls
+    // `deserializer.deserialize_newtype_struct` itself), so calling it
+    // directly here double-wraps and fails with "invalid type: byte array,
+    // expected a valid CID in bytes, wrapped in an newtype struct". Instead,
+    // ask this inner deserializer for bytes directly and validate them the
+    // same way `Cid::deserialize` does (`Cid::validate`).
+    fn visit_newtype_struct<D: Deserializer<'de>>(
+        self,
+        deserializer: D,
+    ) -> Result<Value, D::Error> {
+        deserializer
+            .deserialize_bytes(CidBytesVisitor)
+            .map(Value::Link)
+    }
+}
+
+struct CidBytesVisitor;
+
+impl Visitor<'_> for CidBytesVisitor {
+    type Value = Cid;
+
+    fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "a CID's raw bytes")
+    }
+
+    fn visit_bytes<E: serde::de::Error>(self, v: &[u8]) -> Result<Cid, E> {
+        let raw = <ipld_core::cid::Cid as TryFrom<&[u8]>>::try_from(v).map_err(E::custom)?;
+        Cid::validate(raw).map_err(E::custom)
+    }
+
+    fn visit_byte_buf<E: serde::de::Error>(self, v: Vec<u8>) -> Result<Cid, E> {
+        self.visit_bytes(&v)
     }
 }
 
@@ -231,5 +290,47 @@ mod tests {
         inner.insert("signals".to_string(), Value::Array(vec![]));
         inner.insert("context".to_string(), Value::Map(BTreeMap::new()));
         roundtrip_cbor(&Value::Map(inner));
+    }
+
+    fn sample_cid() -> Cid {
+        Cid::new(
+            crate::envelope::CidCodec::DagCbor,
+            crate::scalar::Hash32::new([7u8; 32]),
+        )
+    }
+
+    #[test]
+    fn dag_cbor_roundtrip_handles_cid_links() {
+        roundtrip_cbor(&Value::Link(sample_cid()));
+
+        let mut map = BTreeMap::new();
+        map.insert("target".to_string(), Value::Link(sample_cid()));
+        map.insert("note".to_string(), Value::Text("fixed a typo".into()));
+        roundtrip_cbor(&Value::Map(map));
+    }
+
+    /// Regression test for the bug found generating `events/*` vectors
+    /// (M1-08): decoding *any* real content struct with a `Cid` field (e.g.
+    /// `amend-body.target`) generically as `Value` used to fail with
+    /// "invalid type: newtype struct", because `Value` had no representation
+    /// for CBOR tag 42. `spec/PROTOCOL.md` §3.1 permits tag 42 anywhere in
+    /// canonical encoding, so `Object.body.plain`/`Object.unknown` (both
+    /// typed `Value`, per `envelope::PlainBody`'s docs) must round-trip it.
+    #[test]
+    fn dag_cbor_roundtrip_of_a_cid_bearing_content_struct_via_generic_value() {
+        use crate::content::AmendBody;
+        use crate::scalar::LongText;
+
+        let amend = AmendBody {
+            target: sample_cid(),
+            note: LongText::new("fixed a typo in the summary").unwrap(),
+            late_claims: None,
+        };
+        let bytes = crate::encode_canonical(&amend).expect("encode AmendBody");
+        let value: Value = crate::decode_canonical(&bytes).expect("decode generically as Value");
+        let reencoded = crate::encode_canonical(&value).expect("re-encode Value");
+        let back: AmendBody =
+            crate::decode_canonical(&reencoded).expect("decode back to AmendBody");
+        assert_eq!(amend, back);
     }
 }

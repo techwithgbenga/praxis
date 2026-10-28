@@ -165,31 +165,44 @@ impl Serialize for Cid {
     }
 }
 
-impl<'de> Deserialize<'de> for Cid {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let raw = RawCid::deserialize(deserializer)?;
+impl Cid {
+    /// Re-validates every constraint CDDL leaves to prose against an already-
+    /// parsed [`RawCid`] (version must be 1, the multicodec must be
+    /// dag-cbor/raw, the multihash function must be BLAKE3, the digest must be
+    /// exactly 32 bytes), shared by [`Deserialize for Cid`](#impl-Deserialize%3C'de%3E-for-Cid)
+    /// and [`crate::value::Value`]'s `Link` variant (`crate::value`'s module
+    /// docs: tag 42 reaches that `Value` via a different CBOR-level path that
+    /// bottoms out in raw CID bytes, not a `RawCid`-aware `Deserializer`, so it
+    /// cannot just call `RawCid::deserialize` and needs this validation on its
+    /// own).
+    pub(crate) fn validate(raw: RawCid) -> Result<Self, String> {
         if raw.version() != CidVersion::V1 {
-            return Err(serde::de::Error::custom("cid must be CIDv1"));
+            return Err("cid must be CIDv1".to_string());
         }
         if CidCodec::from_multicodec(raw.codec()).is_none() {
-            return Err(serde::de::Error::custom(format!(
+            return Err(format!(
                 "unsupported CID multicodec {:#x} (expected dag-cbor 0x71 or raw 0x55)",
                 raw.codec()
-            )));
+            ));
         }
         let hash = raw.hash();
         if hash.code() != MULTIHASH_BLAKE3 {
-            return Err(serde::de::Error::custom(format!(
+            return Err(format!(
                 "unsupported CID multihash code {:#x} (expected BLAKE3 0x1e)",
                 hash.code()
-            )));
-        }
-        if hash.digest().len() != 32 {
-            return Err(serde::de::Error::custom(
-                "CID digest must be exactly 32 bytes",
             ));
         }
+        if hash.digest().len() != 32 {
+            return Err("CID digest must be exactly 32 bytes".to_string());
+        }
         Ok(Self(raw))
+    }
+}
+
+impl<'de> Deserialize<'de> for Cid {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let raw = RawCid::deserialize(deserializer)?;
+        Self::validate(raw).map_err(serde::de::Error::custom)
     }
 }
 
