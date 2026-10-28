@@ -13,6 +13,8 @@
 //! regardless, in case a future dependency version is ever slightly more lenient.
 
 use ipld_core::ipld::Ipld;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 
 use crate::envelope::Object;
 
@@ -95,25 +97,20 @@ fn check_limits(value: &Ipld, depth: usize) -> Result<(), CodecError> {
     }
 }
 
-/// Decodes and fully validates an [`Object`] from its canonical dag-cbor bytes.
+/// Decodes and fully validates *any* type `T` from its canonical dag-cbor
+/// bytes: non-minimal integers, unordered/duplicate map keys,
+/// indefinite-length items, any tag other than 42 (all already caught by the
+/// strict underlying decoder, re-verified here per §5.2), floats anywhere in
+/// the structure, nesting deeper than 16, and arrays longer than 1024 items.
 ///
-/// Rejects: oversized input; any non-canonical encoding (non-minimal integers,
-/// unordered/duplicate map keys, indefinite-length items, any tag other than
-/// 42 — all already caught by the strict underlying decoder, re-verified here
-/// per §5.2); floats anywhere in the structure; nesting deeper than 16; arrays
-/// longer than 1024 items; and any field-level shape/range violation enforced
-/// by the `Object`/content types themselves (`spec/PROTOCOL.md` §3, M1-01).
-///
-/// Does **not** check signatures, identity-log validity, or case-lifecycle
-/// rules (C1-C8) — that is `praxis-validate`'s job (M1-07), one layer up.
+/// This is the general-purpose half of [`decode_object`], which additionally
+/// enforces [`MAX_OBJECT_BYTES`] (a whole-`Object`-specific limit, not
+/// meaningful for an arbitrary substructure — e.g. a sealed body's plaintext,
+/// `praxis-crypto`'s use case for this).
 ///
 /// # Errors
 /// See [`CodecError`].
-pub fn decode_object(bytes: &[u8]) -> Result<Object, CodecError> {
-    if bytes.len() > MAX_OBJECT_BYTES {
-        return Err(CodecError::TooLarge(bytes.len()));
-    }
-
+pub fn decode_canonical<T: DeserializeOwned>(bytes: &[u8]) -> Result<T, CodecError> {
     let generic: Ipld =
         serde_ipld_dagcbor::from_slice(bytes).map_err(|e| CodecError::Decode(e.to_string()))?;
     check_limits(&generic, 0)?;
@@ -125,6 +122,33 @@ pub fn decode_object(bytes: &[u8]) -> Result<Object, CodecError> {
     }
 
     serde_ipld_dagcbor::from_slice(bytes).map_err(|e| CodecError::Decode(e.to_string()))
+}
+
+/// Encodes any `T` to its canonical dag-cbor bytes. See [`decode_canonical`]
+/// for why this is split out from [`encode_object`].
+///
+/// # Errors
+/// See [`CodecError::Encode`].
+pub fn encode_canonical<T: Serialize>(value: &T) -> Result<Vec<u8>, CodecError> {
+    serde_ipld_dagcbor::to_vec(value).map_err(|e| CodecError::Encode(e.to_string()))
+}
+
+/// Decodes and fully validates an [`Object`] from its canonical dag-cbor bytes.
+///
+/// Rejects everything [`decode_canonical`] does, plus oversized input, and
+/// any field-level shape/range violation enforced by the `Object`/content
+/// types themselves (`spec/PROTOCOL.md` §3, M1-01).
+///
+/// Does **not** check signatures, identity-log validity, or case-lifecycle
+/// rules (C1-C8) — that is `praxis-validate`'s job (M1-07), one layer up.
+///
+/// # Errors
+/// See [`CodecError`].
+pub fn decode_object(bytes: &[u8]) -> Result<Object, CodecError> {
+    if bytes.len() > MAX_OBJECT_BYTES {
+        return Err(CodecError::TooLarge(bytes.len()));
+    }
+    decode_canonical(bytes)
 }
 
 /// Encodes an [`Object`] to its canonical dag-cbor bytes.
@@ -143,7 +167,7 @@ pub fn encode_object(object: &Object) -> Result<Vec<u8>, CodecError> {
     {
         return Err(CodecError::ReservedFieldName(name.clone()));
     }
-    serde_ipld_dagcbor::to_vec(object).map_err(|e| CodecError::Encode(e.to_string()))
+    encode_canonical(object)
 }
 
 /// Computes an object's own ID: the `Cid` of its entire canonical encoding,
@@ -234,6 +258,29 @@ mod tests {
             pos_z < pos_aa,
             "\"z\" (shorter) must be encoded before \"aa\" (longer)"
         );
+    }
+
+    #[test]
+    fn decode_canonical_works_on_an_arbitrary_substructure() {
+        let body = PlainBody {
+            plain: Value::Int(42),
+            salt: [9u8; 16],
+            pad: None,
+        };
+        let bytes = encode_canonical(&body).unwrap();
+        let back: PlainBody = decode_canonical(&bytes).unwrap();
+        assert_eq!(body, back);
+    }
+
+    #[test]
+    fn decode_canonical_still_rejects_non_canonical_input() {
+        // Non-minimal integer, same as `rejects_non_minimal_integers` below,
+        // but through the generic entry point `decode_object` delegates to.
+        let bytes: Vec<u8> = vec![0x1a, 0x00, 0x00, 0x00, 0x01];
+        assert!(matches!(
+            decode_canonical::<u32>(&bytes),
+            Err(CodecError::Decode(_))
+        ));
     }
 
     #[test]
